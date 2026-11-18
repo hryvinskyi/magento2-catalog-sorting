@@ -1,0 +1,32 @@
+{
+    "name": "hryvinskyi/magento2-catalog-sorting",
+    "description": "Sorting of storefront catalog listings in the search engine: leading sort rules, shopper sort fields and product search document fields contributed by other modules.",
+    "type": "magento2-module",
+    "version": "1.0.0",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Volodymyr Hryvinskyi",
+            "email": "volodymyr@hryvinskyi.com"
+        }
+    ],
+    "require": {
+        "php": "~8.1.0||~8.2.0||~8.3.0||~8.4.0||~8.5.0",
+        "magento/framework": "*",
+        "magento/module-advanced-search": "*",
+        "magento/module-elasticsearch": "*",
+        "magento/module-open-search": "*",
+        "magento/module-elasticsearch-8": "*",
+        "magento/module-store": "*",
+        "magento/module-config": "*",
+        "magento/module-backend": "*"
+    },
+    "autoload": {
+        "files": [
+            "registration.php"
+        ],
+        "psr-4": {
+            "Hryvinskyi\\CatalogSorting\\": ""
+        }
+    }
+}

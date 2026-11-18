@@ -1,0 +1,91 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright (c) 2026. Volodymyr Hryvinskyi. All rights reserved.
+ * Author: Volodymyr Hryvinskyi <volodymyr@hryvinskyi.com>
+ * GitHub: https://github.com/hryvinskyi
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <preference for="Hryvinskyi\CatalogSorting\Api\Data\LeadingSortInterface"
+                type="Hryvinskyi\CatalogSorting\Model\Data\LeadingSort"/>
+    <preference for="Hryvinskyi\CatalogSorting\Api\Search\SortClauseRendererInterface"
+                type="Hryvinskyi\CatalogSorting\Model\Search\SortClauseRenderer"/>
+    <preference for="Hryvinskyi\CatalogSorting\Api\Search\LeadingSortsInterface"
+                type="Hryvinskyi\CatalogSorting\Model\Search\LeadingSorts"/>
+    <preference for="Hryvinskyi\CatalogSorting\Api\Data\SortFieldInterface"
+                type="Hryvinskyi\CatalogSorting\Model\Data\SortField"/>
+    <preference for="Hryvinskyi\CatalogSorting\Api\Search\ShopperSortFieldsInterface"
+                type="Hryvinskyi\CatalogSorting\Model\Search\ShopperSortFields"/>
+
+    <!--
+        Rules: a rule module adds an item implementing ListingSortRuleInterface, with a sortOrder (lower goes first).
+        Requests: the storefront product listings; a module whose listing should follow the rules adds its
+        request name here.
+    -->
+    <type name="Hryvinskyi\CatalogSorting\Model\Search\LeadingSorts">
+        <arguments>
+            <argument name="rules" xsi:type="array"/>
+            <argument name="requestNames" xsi:type="array">
+                <item name="catalog_view_container" xsi:type="string">catalog_view_container</item>
+                <item name="quick_search_container" xsi:type="string">quick_search_container</item>
+                <item name="advanced_search_container" xsi:type="string">advanced_search_container</item>
+            </argument>
+        </arguments>
+    </type>
+
+    <!--
+        Shopper sort fields: a method module adds an item implementing ShopperSortFieldInterface (usually a virtual
+        type of ConfiguredShopperSortField). The item key is free text; the sort code comes from the item.
+    -->
+    <type name="Hryvinskyi\CatalogSorting\Model\Search\ShopperSortFields">
+        <arguments>
+            <argument name="sortFields" xsi:type="array"/>
+        </arguments>
+    </type>
+
+    <!--
+        One plugin per supported engine, on the engine's own query mapper. Global, not storefront-only: search
+        requests are also built outside the frontend area. The Elasticsearch 8 entry goes when that engine does.
+    -->
+    <type name="Magento\OpenSearch\SearchAdapter\Mapper">
+        <plugin name="Hryvinskyi_CatalogSorting::leadingSorts"
+                type="Hryvinskyi\CatalogSorting\Plugin\Search\LeadingSortsPlugin"/>
+    </type>
+    <type name="Magento\Elasticsearch8\SearchAdapter\Mapper">
+        <plugin name="Hryvinskyi_CatalogSorting::leadingSorts"
+                type="Hryvinskyi\CatalogSorting\Plugin\Search\LeadingSortsPlugin"/>
+    </type>
+
+    <!--
+        Document fields: a method module adds an item implementing DocumentFieldProviderInterface. The composite
+        is one of the additional fields providers the product data mapper of both supported engines asks once per
+        document batch, and it declares the provider fields' mapping types.
+    -->
+    <preference for="Hryvinskyi\CatalogSorting\Api\Index\DocumentFieldTypesInterface"
+                type="Hryvinskyi\CatalogSorting\Model\Index\DocumentFields"/>
+    <type name="Hryvinskyi\CatalogSorting\Model\Index\DocumentFields">
+        <arguments>
+            <argument name="providers" xsi:type="array"/>
+        </arguments>
+    </type>
+    <virtualType name="additionalFieldsProviderForElasticsearch"
+                 type="Magento\AdvancedSearch\Model\Adapter\DataMapper\AdditionalFieldsProvider">
+        <arguments>
+            <argument name="fieldsProviders" xsi:type="array">
+                <item name="hryvinskyi_catalog_sorting" xsi:type="object">Hryvinskyi\CatalogSorting\Model\Index\DocumentFields</item>
+            </argument>
+        </arguments>
+    </virtualType>
+
+    <!--
+        Mapping types of the document fields, added when an index is created (indexing runs from cron and the
+        command line, hence global). The plugged class is the parent of both supported engines' product field
+        mappers, which inherit its plugins.
+    -->
+    <type name="Magento\Elasticsearch\ElasticAdapter\Model\Adapter\FieldMapper\ProductFieldMapper">
+        <plugin name="Hryvinskyi_CatalogSorting::documentFieldTypes"
+                type="Hryvinskyi\CatalogSorting\Plugin\Index\DocumentFieldTypesPlugin"/>
+    </type>
+</config>
